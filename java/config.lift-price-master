@@ -1,0 +1,9 @@
+executable:dojo.liftpasspricing.PricesTest
+
+filename_convention_scheme:standard
+
+interpreter:java
+
+full_name:kata-lift-price-master
+
+view_program:vim

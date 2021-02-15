@@ -1,49 +1,47 @@
 package dojo.liftpasspricing;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.sql.Connection;
-import java.sql.SQLException;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import spark.Spark;
 
+import java.sql.Connection;
+
+
 public class PricesTest {
 
-    private Connection connection;
+    public static void main(String[] args) {
+        Connection connection = null;
+        try {
+            connection = Prices.createApp();
+            JsonPath response = RestAssured.
+                    given().
+                    port(4567).
+                    when().
+                    // construct some proper url parameters
+                            get("/prices").
+                            then().
+                            assertThat().
+                            statusCode(200).
+                            assertThat().
+                            contentType("application/json").
+                            extract().jsonPath();
 
-    @BeforeEach
-    public void createPrices() throws SQLException {
-        connection = Prices.createApp();
+            System.out.println("test result:" + response.getString("cost"));
+        } catch (Exception e) {
+            Spark.stop();
+            System.out.println(e.getMessage());
+        } finally {
+            stop(connection);
+        }
     }
 
-    @AfterEach
-    public void stopApplication() throws SQLException {
+    private static void stop(final Connection connection) {
         Spark.stop();
-        connection.close();
-    }
-
-    @Test
-    public void doesSomething() {
-        JsonPath response = RestAssured.
-            given().
-                port(4567).
-            when().
-                // construct some proper url parameters
-                get("/prices").
-            then().
-                assertThat().
-                    statusCode(200).
-                assertThat().
-                    contentType("application/json").
-            extract().jsonPath();
-
-        assertEquals("putSomehtingHere", response.get("putSomehtingHere"));
+        try{
+            connection.close();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
 
 }

@@ -1,0 +1,1 @@
+CLASSPATH:@PROJECT_PATH@/target/classes:@PROJECT_PATH@/target/test-classes:@PROJECT_PATH@/target/lift-pass-pricing-1.0-SNAPSHOT-jar-with-dependencies.jar

@@ -12,3 +12,6 @@ build
 .classpath
 .settings
 .pmd
+
+# TextTest
+environment.lift-price-master

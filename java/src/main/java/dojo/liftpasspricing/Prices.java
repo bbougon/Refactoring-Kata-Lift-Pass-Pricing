@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -91,22 +92,24 @@ public class Prices {
                     if (age != null && age < 6) {
                         cost = 0;
                     } else {
-                        reduction = 0;
-
                         if (!req.queryParams("type").equals("night")) {
                             DateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd");
 
+                            String stringDate = req.queryParams("date");
+                            Date date = null;
+                            if (stringDate != null){
+                                date = isoFormat.parse(stringDate);
+                            }
                             try (PreparedStatement holidayStmt = connection.prepareStatement( //
                                     "SELECT * FROM holidays")) {
                                 try (ResultSet holidays = holidayStmt.executeQuery()) {
 
                                     while (holidays.next()) {
                                         Date holiday = holidays.getDate("holiday");
-                                        if (req.queryParams("date") != null) {
-                                            Date d = isoFormat.parse(req.queryParams("date"));
-                                            if (d.getYear() == holiday.getYear() && //
-                                                    d.getMonth() == holiday.getMonth() && //
-                                                    d.getDate() == holiday.getDate()) {
+                                        if (date != null) {
+                                            if (date.getYear() == holiday.getYear() && //
+                                                    date.getMonth() == holiday.getMonth() && //
+                                                    date.getDate() == holiday.getDate()) {
                                                 isHoliday = true;
                                             }
                                         }
@@ -115,13 +118,7 @@ public class Prices {
                                 }
                             }
 
-                            if (req.queryParams("date") != null) {
-                                Calendar calendar = Calendar.getInstance();
-                                calendar.setTime(isoFormat.parse(req.queryParams("date")));
-                                if (!isHoliday && calendar.get(Calendar.DAY_OF_WEEK) == 2) {
-                                    reduction = 35;
-                                }
-                            }
+                            reduction = computeDiscount(date, isHoliday);
 
                             // TODO apply reduction for others
                             cost = Price.computePriceThatIsNotDuringNight(age, reduction, baseCost);
@@ -140,6 +137,18 @@ public class Prices {
         });
 
         return connection;
+    }
+
+    private static int computeDiscount(final Date date, final boolean isHoliday) {
+        int reduction = 0;
+        if (date != null) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(date);
+            if (!isHoliday && calendar.get(Calendar.DAY_OF_WEEK) == 2) {
+                reduction = 35;
+            }
+        }
+        return reduction;
     }
 
 

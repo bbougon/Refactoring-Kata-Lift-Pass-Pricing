@@ -87,7 +87,7 @@ public class Prices {
                     int baseCost = result.getInt("cost");
 
                     int reduction;
-                    boolean isHoliday = false;
+                    boolean isHoliday;
 
                     if (age != null && age < 6) {
                         cost = 0;
@@ -97,25 +97,31 @@ public class Prices {
 
                             String stringDate = req.queryParams("date");
                             Date date = null;
-                            if (stringDate != null){
+                            if (stringDate != null) {
                                 date = isoFormat.parse(stringDate);
                             }
                             try (PreparedStatement holidayStmt = connection.prepareStatement( //
                                     "SELECT * FROM holidays")) {
+                                Holidays holidays2 = new Holidays();
+
                                 try (ResultSet holidays = holidayStmt.executeQuery()) {
 
                                     while (holidays.next()) {
-                                        Date holiday = holidays.getDate("holiday");
-                                        if (date != null) {
-                                            if (date.getYear() == holiday.getYear() && //
-                                                    date.getMonth() == holiday.getMonth() && //
-                                                    date.getDate() == holiday.getDate()) {
-                                                isHoliday = true;
-                                            }
-                                        }
+                                        holidays2.add(holidays.getDate("holiday"));
+
                                     }
 
                                 }
+                                final Date date2 = date;
+                                isHoliday = holidays2.holidays().stream().anyMatch(holiday ->
+                                {
+                                    if (date2 != null) {
+                                        return date2.getYear() == holiday.getYear() && //
+                                                date2.getMonth() == holiday.getMonth() && //
+                                                date2.getDate() == holiday.getDate();
+                                    }
+                                    return false;
+                                });
                             }
 
                             reduction = computeDiscount(date, isHoliday);

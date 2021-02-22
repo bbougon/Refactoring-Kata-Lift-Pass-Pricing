@@ -17,6 +17,40 @@ import java.util.Date;
 
 public class Prices {
 
+    static class Price {
+        private static int computePriceDuringNight(final Integer age, final int baseCost) {
+            int cost;
+            if (age != null && age >= 6) {
+                if (age > 64) {
+                    cost = (int) Math.ceil(baseCost * .4);
+                } else {
+                    cost = baseCost;
+                }
+            } else {
+                cost = 0;
+            }
+            return cost;
+        }
+
+        private static int computePriceThatIsNotDuringNight(final Integer age, final int reduction, final int baseCost) {
+            int cost;
+            if (age != null && age < 15) {
+                cost = (int) Math.ceil(baseCost * .7);
+            } else {
+                if (age == null) {
+                    cost = (int) Math.ceil(baseCost * (1 - reduction / 100.0));
+                } else {
+                    if (age > 64) {
+                        cost = (int) Math.ceil(baseCost * .75 * (1 - reduction / 100.0));
+                    } else {
+                        cost = (int) Math.ceil(baseCost * (1 - reduction / 100.0));
+                    }
+                }
+            }
+            return cost;
+        }
+    }
+
     public static Connection createApp() throws SQLException {
 
         final Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/lift_pass", "root", "mysql");
@@ -49,6 +83,7 @@ public class Prices {
                 costStmt.setString(1, req.queryParams("type"));
                 try (ResultSet result = costStmt.executeQuery()) {
                     result.next();
+                    int baseCost = result.getInt("cost");
 
                     int reduction;
                     boolean isHoliday = false;
@@ -89,9 +124,9 @@ public class Prices {
                             }
 
                             // TODO apply reduction for others
-                            cost = computeCostThatIsNotDuringNight(age, reduction, result.getInt("cost"));
+                            cost = Price.computePriceThatIsNotDuringNight(age, reduction, baseCost);
                         } else {
-                            cost = computeCostDuringNight(age, result.getInt("cost"));
+                            cost = Price.computePriceDuringNight(age, baseCost);
                         }
                     }
                 }
@@ -107,37 +142,6 @@ public class Prices {
         return connection;
     }
 
-    private static int computeCostDuringNight(final Integer age, final int baseCost) {
-        int cost;
-        if (age != null && age >= 6) {
-            if (age > 64) {
-                cost = (int) Math.ceil(baseCost * .4);
-            } else {
-                cost = baseCost;
-            }
-        } else {
-            cost = 0;
-        }
-        return cost;
-    }
-
-    private static int computeCostThatIsNotDuringNight(final Integer age, final int reduction, final int baseCost) {
-        int cost;
-        if (age != null && age < 15) {
-            cost = (int) Math.ceil(baseCost * .7);
-        } else {
-            if (age == null) {
-                cost = (int) Math.ceil(baseCost * (1 - reduction / 100.0));
-            } else {
-                if (age > 64) {
-                    cost = (int) Math.ceil(baseCost * .75 * (1 - reduction / 100.0));
-                } else {
-                    cost = (int) Math.ceil(baseCost * (1 - reduction / 100.0));
-                }
-            }
-        }
-        return cost;
-    }
 
     private static String displayCost(final int cost) {
         return "{ \"cost\": " + cost + "}";

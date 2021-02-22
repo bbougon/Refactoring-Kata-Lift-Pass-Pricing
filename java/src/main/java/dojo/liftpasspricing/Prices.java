@@ -29,7 +29,7 @@ public class Prices {
 
             try (PreparedStatement stmt = connection.prepareStatement( //
                     "INSERT INTO base_price (type, cost) VALUES (?, ?) " + //
-                    "ON DUPLICATE KEY UPDATE cost = ?")) {
+                            "ON DUPLICATE KEY UPDATE cost = ?")) {
                 stmt.setString(1, liftPassType);
                 stmt.setInt(2, liftPassCost);
                 stmt.setInt(3, liftPassCost);
@@ -44,16 +44,17 @@ public class Prices {
 
             try (PreparedStatement costStmt = connection.prepareStatement( //
                     "SELECT cost FROM base_price " + //
-                    "WHERE type = ?")) {
+                            "WHERE type = ?")) {
                 costStmt.setString(1, req.queryParams("type"));
                 try (ResultSet result = costStmt.executeQuery()) {
                     result.next();
 
                     int reduction;
                     boolean isHoliday = false;
+                    int tmpCost = 0;
 
                     if (age != null && age < 6) {
-                        return "{ \"cost\": 0}";
+                        return displayCost(tmpCost);
                     } else {
                         reduction = 0;
 
@@ -69,8 +70,8 @@ public class Prices {
                                         if (req.queryParams("date") != null) {
                                             Date d = isoFormat.parse(req.queryParams("date"));
                                             if (d.getYear() == holiday.getYear() && //
-                                                d.getMonth() == holiday.getMonth() && //
-                                                d.getDate() == holiday.getDate()) {
+                                                    d.getMonth() == holiday.getMonth() && //
+                                                    d.getDate() == holiday.getDate()) {
                                                 isHoliday = true;
                                             }
                                         }
@@ -89,30 +90,37 @@ public class Prices {
 
                             // TODO apply reduction for others
                             if (age != null && age < 15) {
-                                return "{ \"cost\": " + (int) Math.ceil(result.getInt("cost") * .7) + "}";
+                                tmpCost = (int) Math.ceil(result.getInt("cost") * .7);
+                                return displayCost(tmpCost);
                             } else {
                                 if (age == null) {
                                     double cost = result.getInt("cost") * (1 - reduction / 100.0);
-                                    return "{ \"cost\": " + (int) Math.ceil(cost) + "}";
+                                    tmpCost = (int) Math.ceil(cost);
+                                    return displayCost(tmpCost);
                                 } else {
                                     if (age > 64) {
                                         double cost = result.getInt("cost") * .75 * (1 - reduction / 100.0);
-                                        return "{ \"cost\": " + (int) Math.ceil(cost) + "}";
+                                        tmpCost = (int) Math.ceil(cost);
+                                        return displayCost(tmpCost);
                                     } else {
                                         double cost = result.getInt("cost") * (1 - reduction / 100.0);
-                                        return "{ \"cost\": " + (int) Math.ceil(cost) + "}";
+                                        tmpCost = (int) Math.ceil(cost);
+                                        return displayCost(tmpCost);
                                     }
                                 }
                             }
                         } else {
                             if (age != null && age >= 6) {
                                 if (age > 64) {
-                                    return "{ \"cost\": " + (int) Math.ceil(result.getInt("cost") * .4) + "}";
+                                    tmpCost = (int) Math.ceil(result.getInt("cost") * .4);
+                                    return displayCost(tmpCost);
                                 } else {
-                                    return "{ \"cost\": " + result.getInt("cost") + "}";
+                                    tmpCost = result.getInt("cost");
+                                    return displayCost(tmpCost);
                                 }
                             } else {
-                                return "{ \"cost\": 0}";
+                                tmpCost = 0;
+                                return displayCost(tmpCost);
                             }
                         }
                     }
@@ -125,6 +133,10 @@ public class Prices {
         });
 
         return connection;
+    }
+
+    private static String displayCost(final int tmpCost) {
+        return "{ \"cost\": " + tmpCost + "}";
     }
 
 }

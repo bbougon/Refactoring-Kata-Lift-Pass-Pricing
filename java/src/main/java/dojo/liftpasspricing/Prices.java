@@ -42,6 +42,7 @@ public class Prices {
         get("/prices", (req, res) -> {
             final Integer age = req.queryParams("age") != null ? Integer.valueOf(req.queryParams("age")) : null;
 
+            int tmpCost = 0;
             try (PreparedStatement costStmt = connection.prepareStatement( //
                     "SELECT cost FROM base_price " + //
                             "WHERE type = ?")) {
@@ -51,10 +52,9 @@ public class Prices {
 
                     int reduction;
                     boolean isHoliday = false;
-                    int tmpCost = 0;
 
                     if (age != null && age < 6) {
-                        return displayCost(tmpCost);
+                        tmpCost = 0;
                     } else {
                         reduction = 0;
 
@@ -91,21 +91,17 @@ public class Prices {
                             // TODO apply reduction for others
                             if (age != null && age < 15) {
                                 tmpCost = (int) Math.ceil(result.getInt("cost") * .7);
-                                return displayCost(tmpCost);
                             } else {
                                 if (age == null) {
                                     double cost = result.getInt("cost") * (1 - reduction / 100.0);
                                     tmpCost = (int) Math.ceil(cost);
-                                    return displayCost(tmpCost);
                                 } else {
                                     if (age > 64) {
                                         double cost = result.getInt("cost") * .75 * (1 - reduction / 100.0);
                                         tmpCost = (int) Math.ceil(cost);
-                                        return displayCost(tmpCost);
                                     } else {
                                         double cost = result.getInt("cost") * (1 - reduction / 100.0);
                                         tmpCost = (int) Math.ceil(cost);
-                                        return displayCost(tmpCost);
                                     }
                                 }
                             }
@@ -113,19 +109,18 @@ public class Prices {
                             if (age != null && age >= 6) {
                                 if (age > 64) {
                                     tmpCost = (int) Math.ceil(result.getInt("cost") * .4);
-                                    return displayCost(tmpCost);
                                 } else {
                                     tmpCost = result.getInt("cost");
-                                    return displayCost(tmpCost);
                                 }
                             } else {
                                 tmpCost = 0;
-                                return displayCost(tmpCost);
                             }
                         }
                     }
                 }
             }
+
+            return displayCost(tmpCost);
         });
 
         after((req, res) -> {
